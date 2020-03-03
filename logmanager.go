@@ -72,8 +72,7 @@ func SetCustomWriters(writers ...Writer) {
 	globalWritersLock.Lock()
 	defer globalWritersLock.Unlock()
 	// copy, so we can "atomically" replace globalWriters
-	newWriters := append([]Writer{}, globalWriters...)
-	newWriters = append(newWriters, writers...)
+	newWriters := append([]Writer{}, writers...)
 	globalWriters = newWriters
 	atomic.StoreUint64(&customWritersSet, 1)
 }
