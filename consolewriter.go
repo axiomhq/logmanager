@@ -12,8 +12,13 @@ import (
 )
 
 func init() {
-	_, noColor := os.LookupEnv("WATCHLY_LOGS_NO_COLOR")
-	color.NoColor = noColor
+	// the library detects whether the terminal supports color, override with this
+	switch os.Getenv("AXIOM_COLORED_OUTPUT") {
+	case "1":
+		color.NoColor = false
+	case "0":
+		color.NoColor = true
+	}
 
 	pName := path.Base(os.Args[0])
 	processName = getColor(pName)(pName)
