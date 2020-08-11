@@ -2,9 +2,11 @@ package logmanager
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -111,7 +113,7 @@ func (w *AxiomDBWriter) postBatch() {
 			continue
 		}
 
-		_, err = axClient.Datasets.Ingest(context.Background(), axDataset, bytes.NewReader(data), axiomdb.JSON, axiomdb.Identity, axiomdb.IngestOptions{})
+		_, err = axClient.Datasets.Ingest(context.Background(), axDataset, gzipStream(bytes.NewReader(data)), axiomdb.JSON, axiomdb.GZIP, axiomdb.IngestOptions{})
 		if err != nil {
 			if axDebug {
 				fmt.Println("Unable to send to axiomdb:", err)
@@ -126,4 +128,21 @@ func (w *AxiomDBWriter) postBatch() {
 			continue
 		}
 	}
+}
+
+func gzipStream(r io.Reader) io.Reader {
+	pr, pw := io.Pipe()
+	go func(r io.Reader) {
+		defer pw.Close()
+
+		// Does not fail when using a predefined compression level.
+		gzw, _ := gzip.NewWriterLevel(pw, gzip.BestSpeed)
+		defer gzw.Close()
+
+		if _, err := io.Copy(gzw, r); err != nil {
+			fmt.Fprintf(os.Stderr, "error compressing data to ingest: %s\n", err)
+		}
+	}(r)
+
+	return pr
 }
