@@ -16,34 +16,12 @@ import (
 )
 
 var (
-	axClient        *axiomdb.Client
-	axDataset       = "axiom-logs"
-	axDebug         = false
 	axMaxBatchSize  = 1000
 	axFlushDuration = time.Second
 )
 
 func init() {
-	url := os.Getenv("AXIOM_DEBUG_AXIOMDB_URL")
-	if url == "" {
-		return
-	}
 
-	var err error
-	axClient, err = axiomdb.NewClient(url)
-	if err != nil {
-		fmt.Println("Unable to connect to axiomdb:", err)
-		return
-	}
-
-	dataset := os.Getenv("AXIOM_DEBUG_DATASET")
-	if dataset != "" {
-		axDataset = dataset
-	}
-
-	if os.Getenv("AXIOM_DEBUG_AXIOMDB_DATASET") != "" {
-		axDebug = true
-	}
 }
 
 type Event struct {
@@ -58,12 +36,40 @@ type Event struct {
 // AxiomDBWriter will write out to a console
 type AxiomDBWriter struct {
 	sync.Mutex
-	events []*Event
+	events  []*Event
+	client  *axiomdb.Client
+	dataset string
+	debug   bool
 }
 
 // NewAxiomDBWriter ...
 func NewAxiomDBWriter() *AxiomDBWriter {
-	w := &AxiomDBWriter{}
+	w := &AxiomDBWriter{
+		dataset: "axiom-logs",
+		debug:   false,
+	}
+
+	url := os.Getenv("AXIOM_DEBUG_AXIOMDB_URL")
+	if url == "" {
+		return w
+	}
+
+	var err error
+	w.client, err = axiomdb.NewClient(url)
+	if err != nil {
+		fmt.Println("Unable to connect to axiomdb:", err)
+		return w
+	}
+
+	dataset := os.Getenv("AXIOM_DEBUG_DATASET")
+	if dataset != "" {
+		w.dataset = dataset
+	}
+
+	if os.Getenv("AXIOM_DEBUG_AXIOMDB_DEBUG") != "" {
+		w.debug = true
+	}
+
 	go w.postBatch()
 	return w
 }
@@ -75,7 +81,7 @@ func (w *AxiomDBWriter) BuildTheme(module string) ColorTheme {
 
 // Log ...
 func (w *AxiomDBWriter) Log(level Level, theme ColorTheme, module, filename string, line int, timestamp time.Time, message string) {
-	if axClient == nil {
+	if w.client == nil {
 		return
 	}
 
@@ -93,6 +99,10 @@ func (w *AxiomDBWriter) Log(level Level, theme ColorTheme, module, filename stri
 }
 
 func (w *AxiomDBWriter) postBatch() {
+	if w.client == nil {
+		return
+	}
+
 	for {
 		time.Sleep(axFlushDuration)
 
@@ -107,15 +117,15 @@ func (w *AxiomDBWriter) postBatch() {
 
 		data, err := json.Marshal(batch)
 		if err != nil {
-			if axDebug {
+			if w.debug {
 				fmt.Println("Unable to create event:", err)
 			}
 			continue
 		}
 
-		_, err = axClient.Datasets.Ingest(context.Background(), axDataset, gzipStream(bytes.NewReader(data)), axiomdb.JSON, axiomdb.GZIP, axiomdb.IngestOptions{})
+		_, err = w.client.Datasets.Ingest(context.Background(), w.dataset, gzipStream(bytes.NewReader(data)), axiomdb.JSON, axiomdb.GZIP, axiomdb.IngestOptions{})
 		if err != nil {
-			if axDebug {
+			if w.debug {
 				fmt.Println("Unable to send to axiomdb:", err)
 			}
 
