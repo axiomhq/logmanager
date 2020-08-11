@@ -2,20 +2,25 @@ package logmanager
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
 	axiomdb "axicode.axiom.co/watchmakers/axiomdb/client"
 )
 
 var (
-	axClient  *axiomdb.Client
-	axDataset = "axiom-logs"
-	axDebug   = false
+	axClient        *axiomdb.Client
+	axDataset       = "axiom-logs"
+	axDebug         = false
+	axMaxBatchSize  = 1000
+	axFlushDuration = time.Second
 )
 
 func init() {
@@ -41,13 +46,26 @@ func init() {
 	}
 }
 
+type Event struct {
+	Time     string `json:"_time,omitempty"`
+	Level    string `json:"level,omitempty"`
+	Module   string `json:"module,omitempty"`
+	Filename string `json:"filename,omitempty"`
+	Line     int    `json:"line,omitempty"`
+	Message  string `json:"message,omitempty"`
+}
+
 // AxiomDBWriter will write out to a console
 type AxiomDBWriter struct {
+	sync.Mutex
+	events []*Event
 }
 
 // NewAxiomDBWriter ...
 func NewAxiomDBWriter() *AxiomDBWriter {
-	return &AxiomDBWriter{}
+	w := &AxiomDBWriter{}
+	go w.postBatch()
+	return w
 }
 
 // BuildTheme ...
@@ -61,31 +79,70 @@ func (w *AxiomDBWriter) Log(level Level, theme ColorTheme, module, filename stri
 		return
 	}
 
-	event := map[string]interface{}{}
-	event["_time"] = timestamp.In(time.UTC).Format(time.RFC3339Nano)
-	event["filename"] = filepath.Base(filename)
-	event["level"] = level.String()
-	event["module"] = module
-	event["line"] = line
-	event["message"] = message
+	event := &Event{}
+	event.Time = timestamp.In(time.UTC).Format(time.RFC3339Nano)
+	event.Filename = filepath.Base(filename)
+	event.Level = level.String()
+	event.Module = module
+	event.Line = line
+	event.Message = message
 
-	data, err := json.Marshal([]map[string]interface{}{event})
-	if err != nil {
-		if axDebug {
-			fmt.Println("Unable to create event:", err)
+	w.Lock()
+	w.events = append(w.events, event)
+	w.Unlock()
+}
+
+func (w *AxiomDBWriter) postBatch() {
+	for {
+		time.Sleep(axFlushDuration)
+
+		w.Lock()
+		batch := w.events
+		w.events = []*Event{}
+		w.Unlock()
+
+		if len(batch) == 0 {
+			continue
 		}
-		return
-	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
-
-	// FIXME: AxiomDB client should do some internal buffering of events before sending
-	_, err = axClient.Datasets.Ingest(ctx, axDataset, bytes.NewReader(data), axiomdb.JSON, axiomdb.Identity, axiomdb.IngestOptions{})
-	if err != nil {
-		if axDebug {
-			fmt.Println("Unable to send to axiomdb:", err)
+		data, err := json.Marshal(batch)
+		if err != nil {
+			if axDebug {
+				fmt.Println("Unable to create event:", err)
+			}
+			continue
 		}
-		return
+
+		_, err = axClient.Datasets.Ingest(context.Background(), axDataset, gzipStream(bytes.NewReader(data)), axiomdb.JSON, axiomdb.GZIP, axiomdb.IngestOptions{})
+		if err != nil {
+			if axDebug {
+				fmt.Println("Unable to send to axiomdb:", err)
+			}
+
+			w.Lock()
+			w.events = append(batch, w.events...)
+			if len(w.events) > axMaxBatchSize {
+				w.events = w.events[len(w.events)-axMaxBatchSize:]
+			}
+			w.Unlock()
+			continue
+		}
 	}
+}
+
+func gzipStream(r io.Reader) io.Reader {
+	pr, pw := io.Pipe()
+	go func(r io.Reader) {
+		defer pw.Close()
+
+		// Does not fail when using a predefined compression level.
+		gzw, _ := gzip.NewWriterLevel(pw, gzip.BestSpeed)
+		defer gzw.Close()
+
+		if _, err := io.Copy(gzw, r); err != nil {
+			fmt.Fprintf(os.Stderr, "error compressing data to ingest: %s\n", err)
+		}
+	}(r)
+
+	return pr
 }
