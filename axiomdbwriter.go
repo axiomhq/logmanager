@@ -19,7 +19,7 @@ var (
 )
 
 func init() {
-	url := os.Getenv("AXIOMDB_URL")
+	url := os.Getenv("AXIOM_DEBUG_AXIOMDB_URL")
 	if url == "" {
 		return
 	}
@@ -36,7 +36,7 @@ func init() {
 		axDataset = dataset
 	}
 
-	if os.Getenv("AXIOM_DEBUG_AXIOMDB") != "" {
+	if os.Getenv("AXIOM_DEBUG_AXIOMDB_DATASET") != "" {
 		axDebug = true
 	}
 }
