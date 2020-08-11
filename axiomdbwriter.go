@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"sync"
 	"time"
@@ -31,23 +32,29 @@ type Event struct {
 	Filename string `json:"filename,omitempty"`
 	Line     int    `json:"line,omitempty"`
 	Message  string `json:"message,omitempty"`
+	Process  string `json:"process,omitempty"`
+	Hostname string `json:"hostname,omitempty"`
 }
 
 // AxiomDBWriter will write out to a console
 type AxiomDBWriter struct {
 	sync.Mutex
-	events  []*Event
-	client  *axiomdb.Client
-	dataset string
-	debug   bool
+	events      []*Event
+	client      *axiomdb.Client
+	dataset     string
+	debug       bool
+	processName string
+	hostname    string
 }
 
 // NewAxiomDBWriter ...
 func NewAxiomDBWriter() *AxiomDBWriter {
 	w := &AxiomDBWriter{
-		dataset: "axiom-logs",
-		debug:   false,
+		dataset:     "axiom-logs",
+		debug:       false,
+		processName: path.Base(os.Args[0]),
 	}
+	w.hostname, _ = os.Hostname()
 
 	url := os.Getenv("AXIOM_DEBUG_AXIOMDB_URL")
 	if url == "" {
@@ -92,6 +99,8 @@ func (w *AxiomDBWriter) Log(level Level, theme ColorTheme, module, filename stri
 	event.Module = module
 	event.Line = line
 	event.Message = message
+	event.Process = w.processName
+	event.Hostname = w.hostname
 
 	w.Lock()
 	w.events = append(w.events, event)
