@@ -15,7 +15,7 @@ import (
 
 // Envvars
 var (
-	loggerSpec = os.Getenv("WATCHLY_DEBUG")
+	loggerSpec = os.Getenv("AXIOM_DEBUG")
 )
 
 // Level defines the log level, from Trace to Critical
@@ -58,7 +58,7 @@ const (
 )
 
 var (
-	globalWriters     = []Writer{NewConsoleWriter()}
+	globalWriters     = []Writer{NewConsoleWriter(), NewAxiomDBWriter()}
 	customWritersSet  uint64
 	globalWritersLock sync.RWMutex
 )
