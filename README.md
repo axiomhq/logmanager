@@ -25,6 +25,12 @@ logmanager is a library that writes to standard error and adds a timestamp witho
 log2console := logmanager.GetLogger("foo.bar")
 log2console.Info("hello world")
 log2console.Warn("it's a trap")
+
+// Prints
+/*
+[09:15:54.24] info  main@foo.bar main.go:10 hello world
+[09:15:54.24] warn  main@foo.bar main.go:11 it's a trap
+*/
 ```
 
 ## Contributing
