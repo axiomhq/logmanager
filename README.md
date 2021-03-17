@@ -2,12 +2,13 @@
 Yet another golang log manager library
 
 ## Table of Contents
-1. [Introduction](#introduction)
-2. [Installation](#installation)
-3. [Usage](#usage)
-4. [Documentation](#documentation)
-5. [Contributing](#contributing)
-6. [License](#license)
+- [logmanager](#logmanager)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Installation](#installation)
+  - [Usage](#usage)
+  - [Contributing](#contributing)
+  - [License](#license)
 
 ## Introduction
 
@@ -19,7 +20,12 @@ logmanager is a library that writes to standard error and adds a timestamp witho
 
 ## Usage
 
-## Documentation
+```go
+// Simple console logger
+log2console := logmanager.GetLogger("foo.bar")
+log2console.Info("hello world")
+log2console.Warn("it's a trap")
+```
 
 ## Contributing
 

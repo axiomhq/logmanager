@@ -58,7 +58,7 @@ const (
 )
 
 var (
-	globalWriters     = []Writer{NewConsoleWriter(), NewAxiomDBWriter()}
+	globalWriters     = []Writer{NewConsoleWriter()}
 	customWritersSet  uint64
 	globalWritersLock sync.RWMutex
 )
