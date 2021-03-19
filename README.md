@@ -49,12 +49,3 @@ Distributed under MIT License (`The MIT License`).
 
 See [LICENSE](LICENSE) for more information.
 
-[![License Status][license_status_badge]][license_status]
-
-
-<!-- Badges -->
-
-[license]: https://opensource.org/licenses/MIT
-[license_badge]: https://img.shields.io/github/license/axiomhq/axiom-go.svg?color=blue&style=flat-square&ghcache=unused
-[license_status]: https://app.fossa.com/projects/git%2Bgithub.com%2Faxiomhq%2Faxiom-go
-[license_status_badge]: https://app.fossa.com/api/projects/git%2Bgithub.com%2Faxiomhq%2Faxiom-go.svg?type=large&ghcache=unused
