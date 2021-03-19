@@ -51,7 +51,3 @@ See [LICENSE](LICENSE) for more information.
 
 [![License Status][license_status_badge]][license_status]
 
-
-<!-- Badges -->
-
-
