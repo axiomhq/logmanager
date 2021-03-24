@@ -34,7 +34,7 @@ func TestLookAtTheLogFormat(t *testing.T) {
 			logger.Debug("test debug")
 			logger.Info("test info")
 			logger.Warn("test warning")
-			logger.Error("test error")
+			_ = logger.Error("test error")
 			logger.Critical("test critical")
 			wg.Done()
 		}(log)
@@ -81,18 +81,18 @@ func TestRecover(t *testing.T) {
 		}()
 
 		panicfunc()
-		return //nolint(vet)
+		return
 	}
 
 	checkPanicErr := func() error { return check(func() { panic(errors.New("oh no")) }) }
 	checkPanicString := func() error { return check(func() { panic("oh no") }) }
 	checkNoPanic := func() error { return check(func() {}) }
 
-	require.NotPanics(func() { checkPanicErr() })
+	require.NotPanics(func() { _ = checkPanicErr() })
 	assert.EqualError(checkPanicErr(), "oh no")
 	assert.EqualError(checkPanicString(), "oh no")
 
-	require.NotPanics(func() { checkNoPanic() })
+	require.NotPanics(func() { _ = checkNoPanic() })
 	assert.NoError(checkNoPanic())
 }
 

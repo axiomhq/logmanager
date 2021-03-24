@@ -114,10 +114,12 @@ type writeDescriptor struct {
 // GetLogger will get a logger for the specified name
 func GetLogger(name string) Logger {
 	// go through the loggerSpec and look for "Foo=Trace" or whatever
-	// it will always prefer longer module names that match but also match smaller ones
-	// for example, for module name foo.bar.baz, foo.bar=Trace will match but foo.bar.baz=Trace will be prefered
-	// it's not smart enough to figure out that foo.bar.ba should be ignored in preference of foo.bar
-	// but that is a compromise that i'm willing to make for simplicity and flexability
+	// it will always prefer longer module names that match but also match
+	// smaller ones for example, for module name foo.bar.baz, foo.bar=Trace will
+	// match but foo.bar.baz=Trace will be preferred it's not smart enough to
+	// figure out that foo.bar.ba should be ignored in preference of foo.bar but
+	// that is a compromise that i'm willing to make for simplicity and
+	// flexability
 	level := Info
 	levelHint := ""
 	for _, moduleInfo := range strings.Split(loggerSpec, ":") {
@@ -225,7 +227,7 @@ func (l *Logger) buildDescriptors() {
 // Log ...
 func (l *Logger) Log(level Level, message string, args ...interface{}) {
 	// safe if not called before writers are added
-	if atomic.CompareAndSwapUint32(&l.themeGenerated, 0, 1) == true {
+	if atomic.CompareAndSwapUint32(&l.themeGenerated, 0, 1) {
 		l.buildDescriptors()
 	}
 
@@ -235,7 +237,7 @@ func (l *Logger) Log(level Level, message string, args ...interface{}) {
 
 	ts := time.Now().UTC()
 	_, filepath, line, ok := runtime.Caller(2)
-	if ok == true {
+	if ok {
 		filepath = path.Base(filepath)
 	} else {
 		filepath = "__unknown__"
@@ -270,7 +272,6 @@ func (l *Logger) JSONifyIndent(v interface{}) string {
 		return fmt.Sprintf("ERRMARSHALLING=%s", err)
 	}
 	return string(b)
-
 }
 
 // IsError is a good replacement for if err != nil {
@@ -280,20 +281,20 @@ func (l *Logger) JSONifyIndent(v interface{}) string {
 func (l *Logger) IsError(err error) bool {
 	if err == nil {
 		return false
-	} else {
-		msg := SPrintStack(3, 8)
-		msg += fmt.Sprintf("Detected error: %v\n", err)
-		l.Log(Error, msg)
-
-		return true
 	}
+
+	msg := SPrintStack(3, 8)
+	msg += fmt.Sprintf("Detected error: %v\n", err)
+	l.Log(Error, msg)
+
+	return true
 }
 
 type stringer interface {
 	String() string
 }
 
-// Recover is intended to be used when recovering from panics, it will function similiarly to IsError
+// Recover is intended to be used when recovering from panics, it will function similarly to IsError
 // in that it will output a stacktrace, but it has additional handling to strip out the panic stack
 // err is interface{} for convenience as that is what you will receieve from recover()
 // example:
@@ -325,7 +326,7 @@ func (l *Logger) Recover(v interface{}) error {
 	}
 
 	if err == nil {
-		err = fmt.Errorf("Unknown panic error: %v", v)
+		err = fmt.Errorf("unknown panic error: %v", v)
 	}
 
 	msg := SPrintStack(5, maxCallers)
@@ -444,7 +445,7 @@ func SPrintStack(skip, max int) string {
 	frames := runtime.CallersFrames(callers)
 	foundFrames := 0
 	more := true
-	for more == true && foundFrames <= max {
+	for more && foundFrames <= max {
 		var frame runtime.Frame
 		frame, more = frames.Next()
 
