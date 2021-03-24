@@ -15,13 +15,13 @@ const rfc5424 = "2006-01-02T15:04:05.000Z07:00"
 
 var utf8bom = []byte{0xef, 0xbb, 0xbf}
 
-// Most of this code imitates the golang syslog implimentation
+// Most of this code imitates the golang syslog implementation
 // but as a lot of that is hard-coded to use specific (poor) formatting
-// we re-impliment
+// we re-implement
 
-// Taken from the go stdlib implimentation of syslog
+// Taken from the go stdlib implementation of syslog
 // modified to not export values
-// nolint
+//nolint:deadcode,varcheck // Maybe they get used at some point.
 const (
 	// Severity.
 
@@ -35,38 +35,6 @@ const (
 	logNotice
 	logInfo
 	logDebug
-)
-
-// nolint
-const (
-	// Facility.
-
-	// From /usr/include/sys/syslog.h.
-	// These are the same up to LOG_FTP on Linux, BSD, and OS X.
-	logKern int = iota << 3
-	logUser
-	logMail
-	logDaemon
-	logAuth
-	logSyslog
-	logLpr
-	logNews
-	logUucp
-	logCron
-	logAuthpriv
-	logFtp
-	_ // unused
-	_ // unused
-	_ // unused
-	_ // unused
-	logLocal0
-	logLocal1
-	logLocal2
-	logLocal3
-	logLocal4
-	logLocal5
-	logLocal6
-	logLocal7
 )
 
 // a sub-interface of net.Conn, makes mocking simpler in tests
@@ -91,7 +59,7 @@ func unixSyslog() (conn connwriter, err error) {
 			}
 		}
 	}
-	return nil, errors.New("Unix syslog delivery error")
+	return nil, errors.New("unix syslog delivery error")
 }
 
 // SyslogWriter ...
@@ -133,7 +101,7 @@ func (w *SyslogWriter) connect() (err error) {
 	w.m.Lock()
 	defer w.m.Unlock()
 	if w.conn != nil {
-		w.conn.Close() // nolint
+		w.conn.Close()
 		w.conn = nil
 	}
 
@@ -171,13 +139,13 @@ func (w *SyslogWriter) sendloop() {
 
 	for {
 		ok := w.sendBufferedMessages()
-		if ok == false {
+		if ok {
 			// network connection problem, backoff for a while to stop any hammering
 			if backoffCounter < 7 {
 				backoffCounter++
 			}
 
-			<-time.After((time.Millisecond * 50) * time.Duration(rand.Int31n(backoffCounter)))
+			<-time.After((time.Millisecond * 50) * time.Duration(rand.Int31n(backoffCounter))) //nolint:gosec // This is fine here.
 		}
 
 		for len(w.bufferedMessages) < 1 {
@@ -187,7 +155,6 @@ func (w *SyslogWriter) sendloop() {
 			}
 		}
 	}
-
 }
 
 func (w *SyslogWriter) sendBufferedMessages() (ok bool) {
@@ -200,8 +167,8 @@ func (w *SyslogWriter) sendBufferedMessages() (ok bool) {
 			break
 		}
 	}
-	if ok == false {
-		defer w.connect() // nolint
+	if ok {
+		defer w.connect() //nolint:errcheck // If it fails, it fails...
 	}
 	return
 }
@@ -238,7 +205,7 @@ func (w *SyslogWriter) Log(level Level, _ ColorTheme, module, filename string, l
 	}
 
 	hostname := "-"
-	if w.localConn == false {
+	if w.localConn {
 		hostname = w.hostname
 	}
 

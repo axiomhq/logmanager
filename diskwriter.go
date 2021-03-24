@@ -24,17 +24,18 @@ type DiskWriter struct {
 }
 
 // rotateLogs will rotate the current logs and return the next rotation time
-// nolint
 func (w DiskWriter) rotateLogs() (time.Time, error) {
 	if _, err := os.Stat(w.logpath); err != nil {
 		// no log to rotate yet
-		os.MkdirAll(path.Dir(w.logpath), 0777)
-		if f, err := os.Create(w.logpath); err != nil {
+		_ = os.MkdirAll(path.Dir(w.logpath), 0777)
+
+		f, err := os.Create(w.logpath)
+		if err != nil {
 			return time.Time{}, err
-		} else {
-			f.Close()
-			return time.Now().Add(w.RotateDuration), nil
 		}
+		defer f.Close()
+
+		return time.Now().Add(w.RotateDuration), nil
 	}
 
 	logfiles := []string{path.Base(w.logpath)}
@@ -56,20 +57,22 @@ func (w DiskWriter) rotateLogs() (time.Time, error) {
 		oldName := logfiles[i]
 		newName := fmt.Sprintf("%s.%d", path.Base(w.logpath), i+1)
 
-		os.Rename(path.Join(logDir, oldName), path.Join(logDir, newName))
+		_ = os.Rename(path.Join(logDir, oldName), path.Join(logDir, newName))
 
 		if i >= w.MaximumLogFiles-1 {
 			os.Remove(path.Join(logDir, newName))
 		}
 	}
 
-	os.MkdirAll(path.Dir(w.logpath), 0777)
-	if f, err := os.Create(w.logpath); err != nil {
+	_ = os.MkdirAll(path.Dir(w.logpath), 0777)
+
+	f, err := os.Create(w.logpath)
+	if err != nil {
 		return time.Time{}, err
-	} else {
-		f.Close()
-		return time.Now().Add(w.RotateDuration), nil
 	}
+	defer f.Close()
+
+	return time.Now().Add(w.RotateDuration), nil
 }
 
 func writeAll(writer io.Writer, buf []byte) error {

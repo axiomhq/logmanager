@@ -22,7 +22,7 @@ func init() {
 	}
 
 	pName := path.Base(os.Args[0])
-	if strings.HasPrefix(os.Args[0], path.Join(os.TempDir(), "go-build")) && strings.HasSuffix(os.Args[0], ".test") == false {
+	if strings.HasPrefix(os.Args[0], path.Join(os.TempDir(), "go-build")) && !strings.HasSuffix(os.Args[0], ".test") {
 		// check to see if the executing program is /tmp/go-build<numbers>/whatever
 		// which generally means this is a go run type thing
 		// in this case the pName we can get is just a long annoying hash
@@ -89,7 +89,6 @@ func (w *ConsoleWriter) BuildTheme(module string) ColorTheme {
 
 // Log ...
 func (w *ConsoleWriter) Log(level Level, theme ColorTheme, module, filename string, line int, timestamp time.Time, message string) {
-
 	ts := timestamp.In(time.UTC).Format("15:04:05.00")
 	filename = filepath.Base(filename)
 

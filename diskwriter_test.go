@@ -20,7 +20,7 @@ func TestDiskWriter(t *testing.T) {
 	marker3 := "i am potato"
 
 	tmpDir, err := ioutil.TempDir(os.TempDir(), "testdiskwriter")
-	defer os.RemoveAll(tmpDir) // nolint
+	defer os.RemoveAll(tmpDir)
 	require.NoError(err)
 
 	logPath := path.Join(tmpDir, "logfile.log")
