@@ -26,15 +26,15 @@ _Logmanager_ is yet another Go logging library.
 ### Install using `go get`
 
 ```shell
-$ go get github.com/axiomhq/logmanager
+ go get github.com/axiomhq/logmanager
 ```
 
 ### Install from source
 
 ```shell
-$ git clone https://github.com/axiomhq/logmanager.git
-$ cd logmanager
-$ make 
+ git clone https://github.com/axiomhq/logmanager.git
+ cd logmanager
+ make 
 ```
 
 ## Usage
