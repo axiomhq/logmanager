@@ -1,7 +1,6 @@
 package logmanager
 
 import (
-	"io/ioutil"
 	"os"
 	"path"
 	"testing"
@@ -19,11 +18,7 @@ func TestDiskWriter(t *testing.T) {
 	marker2 := "than you, far too kind"
 	marker3 := "i am potato"
 
-	tmpDir, err := ioutil.TempDir(os.TempDir(), "testdiskwriter")
-	defer os.RemoveAll(tmpDir)
-	require.NoError(err)
-
-	logPath := path.Join(tmpDir, "logfile.log")
+	logPath := path.Join(t.TempDir(), "logfile.log")
 	writer := NewDiskWriter(logPath, DiskWriterConfig{
 		RotateDuration:  time.Millisecond,
 		MaximumLogFiles: 3,
@@ -32,7 +27,7 @@ func TestDiskWriter(t *testing.T) {
 	writer.Log(Info, ColorTheme{}, "logmanager", "diskwriter_test.go", 32, time.Now(), "whatmahnameeee")
 	<-time.After(time.Millisecond * 10)
 
-	_, err = os.Stat(logPath)
+	_, err := os.Stat(logPath)
 	require.NoError(err, "log file should exist after logging")
 	writer.Close()
 
@@ -70,15 +65,15 @@ func TestDiskWriter(t *testing.T) {
 	require.Error(err, "after the third rotation we hit max log files (3), .3 should not exist")
 	writer.Close()
 
-	all, err := ioutil.ReadFile(logPath)
+	all, err := os.ReadFile(logPath)
 	require.NoError(err)
 	assert.Contains(string(all), marker3, "logfile should contain last written message")
 
-	all, err = ioutil.ReadFile(logPath + ".1")
+	all, err = os.ReadFile(logPath + ".1")
 	require.NoError(err)
 	assert.Contains(string(all), marker2, "logfile.1 should contain the correct message")
 
-	all, err = ioutil.ReadFile(logPath + ".2")
+	all, err = os.ReadFile(logPath + ".2")
 	require.NoError(err)
 	assert.Contains(string(all), marker1, "logfile.2 should contain the correct message")
 }

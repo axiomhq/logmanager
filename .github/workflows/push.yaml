@@ -1,0 +1,71 @@
+name: Push
+
+on:
+  push:
+    branches:
+      - main
+
+# Make sure the workflow is only ever run for the latest changes on main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
+      - run: echo "GOLANGCI_LINT_VERSION=$(go list -m -f '{{.Version}}' github.com/golangci/golangci-lint/v2)" >> $GITHUB_ENV
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+
+  test:
+    name: Test
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Test
+        run: make test
+
+  build:
+    name: Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: echo "GORELEASER_VERSION=$(go list -m -f '{{.Version}}' github.com/goreleaser/goreleaser/v2)" >> $GITHUB_ENV
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: ${{ env.GORELEASER_VERSION }}
+          args: --snapshot
+
+  ci-pass:
+    name: CI Pass
+    needs:
+      - lint
+      - test
+      - build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - if: |
+          needs.lint.result != 'success' ||
+          needs.test.result != 'success' ||
+          needs.build.result != 'success'
+        run: exit 1

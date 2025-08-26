@@ -1,0 +1,63 @@
+name: PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+# Make sure the workflow is only ever run for the latest changes in the PR.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - "1.24"
+          - "1.25"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+      - run: echo "GOLANGCI_LINT_VERSION=$(go list -m -f '{{.Version}}' github.com/golangci/golangci-lint/v2)" >> $GITHUB_ENV
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          only-new-issues: true
+
+  test:
+    name: Test
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go:
+          - "1.24"
+          - "1.25"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go }}
+          cache: false
+      - name: Test
+        run: make test
+
+  ci-pass:
+    name: CI Pass
+    needs:
+      - lint
+      - test
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - if: |
+          needs.lint.result != 'success' ||
+          needs.test.result != 'success'
+        run: exit 1

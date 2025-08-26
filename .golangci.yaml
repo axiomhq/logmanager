@@ -1,0 +1,68 @@
+version: "2"
+
+run:
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - copyloopvar
+    - dogsled
+    - dupl
+    - errcheck
+    - exhaustive
+    - goconst
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - nolintlint
+    - prealloc
+    - revive
+    - staticcheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+  settings:
+    nolintlint:
+      allow-unused: false
+      require-explanation: true
+      require-specific: true
+    staticcheck:
+      checks:
+        - -SA1019
+        - all
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - .git
+      - .github
+      - .vscode
+      - dist
+      - bin
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/axiomhq/logmanager
+  exclusions:
+    generated: lax
+    paths:
+      - .git
+      - .github
+      - .vscode
+      - dist
+      - bin

@@ -22,7 +22,7 @@ func TestLookAtTheLogFormat(t *testing.T) {
 	}
 
 	// also read-add some of the log modules to test race conditions
-	for i := 0; i <= 10; i++ {
+	for range 10 {
 		logmodules = append(logmodules, logmodules[0])
 	}
 
@@ -96,7 +96,7 @@ func TestRecover(t *testing.T) {
 	assert.NoError(checkNoPanic())
 }
 
-func TestLogAndExtend(t *testing.T) {
+func TestLogAndExtend(_ *testing.T) {
 	logger := GetLogger("panic-test")
 
 	logger.Info("Logging happily")

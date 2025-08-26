@@ -1,83 +1,102 @@
-# Logmanager
+# logmanager [![Go Reference][gopkg_badge]][gopkg] [![Workflow][workflow_badge]][workflow] [![Latest Release][release_badge]][release] [![License][license_badge]][license]
 
-[![Go Reference][gopkg_badge]][gopkg]
-[![Go Workflow][go_workflow_badge]][go_workflow]
-[![Coverage Status][coverage_badge]][coverage]
-[![Go Report][report_badge]][report]
-[![Latest Release][release_badge]][release]
-[![License][license_badge]][license]
+Yet another Go logging library with a focus on simplicity and flexibility.
 
----
-
-## Table of Contents
-
-1. [Introduction](#introduction)
-1. [Installation](#Installation)
-1. [Usage](#usage)
-1. [Contributing](#contributing)
-1. [License](#license)
-
-## Introduction
-
-_Logmanager_ is yet another Go logging library.
-
-## Installation
-
-### Install using `go get`
+## Install
 
 ```shell
- go get github.com/axiomhq/logmanager
-```
-
-### Install from source
-
-```shell
- git clone https://github.com/axiomhq/logmanager.git
- cd logmanager
- make 
+go get github.com/axiomhq/logmanager
 ```
 
 ## Usage
 
 ```go
-// Simple console logger
-log2console := logmanager.GetLogger("foo.bar")
-log2console.Info("hello world")
-log2console.Warn("it's a trap")
+package main
 
-// Prints:
-// [09:15:54.24] info  main@foo.bar main.go:10 hello world
-// [09:15:54.24] warn  main@foo.bar main.go:11 it's a trap
+import (
+    "github.com/axiomhq/logmanager"
+)
+
+func main() {
+    // Simple console logger
+    log := logmanager.GetLogger("foo.bar")
+    log.Info("hello world")
+    log.Warn("it's a trap")
+
+    // Output:
+    // [09:15:54.24] info  main@foo.bar main.go:10 hello world
+    // [09:15:54.24] warn  main@foo.bar main.go:11 it's a trap
+}
 ```
 
-## Contributing
+## Features
 
-Feel free to submit PRs or to fill issues. Every kind of help is appreciated. 
+- Multiple log levels (Trace, Debug, Info, Warning, Error, Critical)
+- Colored console output with automatic color assignment per module
+- File-based logging with automatic rotation
+- Syslog support (RFC 5424)
+- Thread-safe operations
+- Module-based logging with inheritance
+- Stack trace support for errors and panics
+- Zero dependencies for core functionality
 
-Before committing, `make` should run without any issues.
+## Configuration
 
-Kindly check our [Contributing](Contributing.md) guide on how to propose
-bugfixes and improvements, and submitting pull requests to the project.
+Set log levels via environment variable:
+
+```shell
+# Set specific module log levels
+export LOGMANAGER_SPEC="foo.bar=Debug:foo=Trace:Info"
+
+# Set global log level
+export LOGMANAGER_SPEC="Debug"
+```
+
+## Writers
+
+logmanager supports multiple output writers:
+
+### Console Writer
+
+Outputs colored logs to stdout/stderr with automatic color assignment per module.
+
+```go
+writer := logmanager.NewConsoleWriter()
+logmanager.AddGlobalWriter(writer)
+```
+
+### Disk Writer
+
+Writes logs to files with automatic rotation support.
+
+```go
+writer := logmanager.NewDiskWriter("/var/log/app.log", logmanager.DiskWriterConfig{
+    RotateDuration:  24 * time.Hour,
+    MaximumLogFiles: 7,
+})
+logmanager.AddGlobalWriter(writer)
+```
+
+### Syslog Writer
+
+Sends logs to syslog (RFC 5424 format).
+
+```go
+writer := logmanager.NewSyslogWriter("myapp", "127.0.0.1:514")
+logmanager.AddGlobalWriter(writer)
+```
 
 ## License
 
-&copy; Axiom, Inc., 2021
-
-Distributed under MIT License (`The MIT License`).
-
-See [LICENSE](LICENSE) for more information.
+[MIT](LICENSE)
 
 <!-- Badges -->
 
 [gopkg]: https://pkg.go.dev/github.com/axiomhq/logmanager
-[gopkg_badge]: https://img.shields.io/badge/doc-reference-007d9c?logo=go&logoColor=white&style=flat-square
-[go_workflow]: https://github.com/axiomhq/logmanager/actions?query=workflow%3Ago
-[go_workflow_badge]: https://img.shields.io/github/workflow/status/axiomhq/logmanager/go?style=flat-square&ghcache=unused
-[coverage]: https://codecov.io/gh/axiomhq/logmanager
-[coverage_badge]: https://img.shields.io/codecov/c/github/axiomhq/logmanager.svg?style=flat-square&ghcache=unused
-[report]: https://goreportcard.com/report/github.com/axiomhq/logmanager
-[report_badge]: https://goreportcard.com/badge/github.com/axiomhq/logmanager?style=flat-square&ghcache=unused
+[gopkg_badge]: https://pkg.go.dev/badge/github.com/axiomhq/logmanager.svg
+[workflow]: https://github.com/axiomhq/logmanager/actions/workflows/push.yaml
+[workflow_badge]: https://img.shields.io/github/actions/workflow/status/axiomhq/logmanager/push.yaml?branch=main&ghcache=unused
 [release]: https://github.com/axiomhq/logmanager/releases/latest
-[release_badge]: https://img.shields.io/github/release/axiomhq/logmanager.svg?style=flat-square&ghcache=unused
-[license]: https://opensource.org/licenses/MIT
-[license_badge]: https://img.shields.io/github/license/axiomhq/logmanager.svg?color=blue&style=flat-square&ghcache=unused
+[release_badge]: https://img.shields.io/github/v/release/axiomhq/logmanager?ghcache=unused
+[license]: LICENSE
+[license_badge]: https://img.shields.io/github/license/axiomhq/logmanager?ghcache=unused

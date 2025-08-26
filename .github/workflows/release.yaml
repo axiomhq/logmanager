@@ -1,0 +1,25 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: echo "GORELEASER_VERSION=$(go list -m -f '{{.Version}}' github.com/goreleaser/goreleaser/v2)" >> $GITHUB_ENV
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: ${{ env.GORELEASER_VERSION }}
+          args: release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
