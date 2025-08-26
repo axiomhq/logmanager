@@ -123,13 +123,10 @@ func GetLogger(name string) Logger {
 	level := Info
 	levelHint := ""
 	for _, moduleInfo := range strings.Split(loggerSpec, ":") {
-		splitted := strings.SplitN(moduleInfo, "=", 2)
-		if len(splitted) != 2 {
+		moduleName, moduleLevel, found := strings.Cut(moduleInfo, "=")
+		if !found {
 			continue
 		}
-
-		moduleName := splitted[0]
-		moduleLevel := splitted[1]
 
 		if len(moduleName) <= len(levelHint) {
 			continue
@@ -183,22 +180,22 @@ func (l *Logger) SetLogLevel(level Level) {
 // Logger logging methods
 
 // Trace ...
-func (l *Logger) Trace(message string, args ...interface{}) { l.Log(Trace, message, args...) }
+func (l *Logger) Trace(message string, args ...any) { l.Log(Trace, message, args...) }
 
 // Debug ...
-func (l *Logger) Debug(message string, args ...interface{}) { l.Log(Debug, message, args...) }
+func (l *Logger) Debug(message string, args ...any) { l.Log(Debug, message, args...) }
 
 // Info ...
-func (l *Logger) Info(message string, args ...interface{}) { l.Log(Info, message, args...) }
+func (l *Logger) Info(message string, args ...any) { l.Log(Info, message, args...) }
 
 // Warn ...
-func (l *Logger) Warn(message string, args ...interface{}) { l.Log(Warning, message, args...) }
+func (l *Logger) Warn(message string, args ...any) { l.Log(Warning, message, args...) }
 
 // Critical ...
-func (l *Logger) Critical(message string, args ...interface{}) { l.Log(Critical, message, args...) }
+func (l *Logger) Critical(message string, args ...any) { l.Log(Critical, message, args...) }
 
 // Error ...
-func (l *Logger) Error(message string, args ...interface{}) error {
+func (l *Logger) Error(message string, args ...any) error {
 	l.Log(Error, message, args...)
 	if len(args) > 0 {
 		if err, ok := args[0].(error); ok {
@@ -225,7 +222,7 @@ func (l *Logger) buildDescriptors() {
 }
 
 // Log ...
-func (l *Logger) Log(level Level, message string, args ...interface{}) {
+func (l *Logger) Log(level Level, message string, args ...any) {
 	// safe if not called before writers are added
 	if atomic.CompareAndSwapUint32(&l.themeGenerated, 0, 1) {
 		l.buildDescriptors()
@@ -255,7 +252,7 @@ func (l *Logger) Log(level Level, message string, args ...interface{}) {
 // JSONify will attempt to jsonify the given structure
 // useful for debugging
 // shorthand for encoding/json marshalling but handling errors and conversion to string
-func (l *Logger) JSONify(v interface{}) string {
+func (l *Logger) JSONify(v any) string {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return fmt.Sprintf("ERRMARSHALLING=%s", err)
@@ -266,7 +263,7 @@ func (l *Logger) JSONify(v interface{}) string {
 // JSONifyIndent will attempt to jsonify the given structure - with opinionated indenting
 // useful for debugging
 // shorthand for encoding/json marshalling but handling errors and conversion to string
-func (l *Logger) JSONifyIndent(v interface{}) string {
+func (l *Logger) JSONifyIndent(v any) string {
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return fmt.Sprintf("ERRMARSHALLING=%s", err)
@@ -285,7 +282,7 @@ func (l *Logger) IsError(err error) bool {
 
 	msg := SPrintStack(3, 8)
 	msg += fmt.Sprintf("Detected error: %v\n", err)
-	l.Log(Error, msg)
+	l.Log(Error, "%s", msg)
 
 	return true
 }
@@ -296,21 +293,21 @@ type stringer interface {
 
 // Recover is intended to be used when recovering from panics, it will function similarly to IsError
 // in that it will output a stacktrace, but it has additional handling to strip out the panic stack
-// err is interface{} for convenience as that is what you will receieve from recover()
+// err is any for convenience as that is what you will receieve from recover()
 // example:
 //
-//      func mycode() (err error) {
-//          defer func() {
-//				if r := logger.Recover(recover()); r != nil{
-//					err = r
-//				}
-//			}()
-//          panic(errors.New("oh no"))
-//          return nil
-//      }
+//	     func mycode() (err error) {
+//	         defer func() {
+//					if r := logger.Recover(recover()); r != nil{
+//						err = r
+//					}
+//				}()
+//	         panic(errors.New("oh no"))
+//	         return nil
+//	     }
 //
 // in addition Recover will covert any string(er) type to an error if an error is not found
-func (l *Logger) Recover(v interface{}) error {
+func (l *Logger) Recover(v any) error {
 	if v == nil {
 		return nil
 	}
@@ -331,7 +328,7 @@ func (l *Logger) Recover(v interface{}) error {
 
 	msg := SPrintStack(5, maxCallers)
 	msg += fmt.Sprintf("Detected panic: %v\n", err)
-	l.Log(Error, msg)
+	l.Log(Error, "%s", msg)
 
 	return err
 }
@@ -345,12 +342,12 @@ func (l *Logger) CheckErr(f func() error) {
 
 // PrintStackTrace will print the current stack out to the info logger channel
 func (l *Logger) PrintStackTrace() {
-	l.Log(Info, SPrintStack(3, maxCallers))
+	l.Log(Info, "%s", SPrintStack(3, maxCallers))
 }
 
 // PrintCaller prints caller of this function
 func (l *Logger) PrintCaller(skip int) {
-	l.Log(Info, SPrintCaller(skip+2))
+	l.Log(Info, "%s", SPrintCaller(skip+2))
 }
 
 // columnedLines takes care of formatting columned output
@@ -369,9 +366,7 @@ func (c *columnedLines) Add(columns ...string) {
 			continue
 		}
 
-		if vsize := len(v); c.columnSizes[i] < vsize {
-			c.columnSizes[i] = vsize
-		}
+		c.columnSizes[i] = max(c.columnSizes[i], len(v))
 	}
 }
 
@@ -427,14 +422,12 @@ func SPrintCaller(skip int) string {
 }
 
 // SPrintStack will print the current stack to a returned string
-func SPrintStack(skip, max int) string {
-	if max > maxCallers {
-		max = maxCallers
-	}
+func SPrintStack(skip, maxDepth int) string {
+	maxDepth = min(maxDepth, maxCallers)
 
 	var msg string
 	msg = ""
-	msg += fmt.Sprintf("Trace (most recent call first, max %d stack):\n", max)
+	msg += fmt.Sprintf("Trace (most recent call first, max %d stack):\n", maxDepth)
 
 	// we allocate a lot of callers because we don't know how many there are, so we just get a lot
 	callers := make([]uintptr, maxCallers)
@@ -445,7 +438,7 @@ func SPrintStack(skip, max int) string {
 	frames := runtime.CallersFrames(callers)
 	foundFrames := 0
 	more := true
-	for more && foundFrames <= max {
+	for more && foundFrames <= maxDepth {
 		var frame runtime.Frame
 		frame, more = frames.Next()
 

@@ -21,18 +21,17 @@ var utf8bom = []byte{0xef, 0xbb, 0xbf}
 
 // Taken from the go stdlib implementation of syslog
 // modified to not export values
-//nolint:deadcode,varcheck // Maybe they get used at some point.
 const (
 	// Severity.
 
 	// From /usr/include/sys/syslog.h.
 	// These are the same on Linux, BSD, and OS X.
-	logEmerg int = iota
-	logAlert
+	_logEmerg int = iota
+	_logAlert
 	logCrit
 	logErr
 	logWarning
-	logNotice
+	_logNotice
 	logInfo
 	logDebug
 )
@@ -54,9 +53,8 @@ func unixSyslog() (conn connwriter, err error) {
 			conn, err := net.Dial(network, path)
 			if err != nil {
 				continue
-			} else {
-				return conn, nil
 			}
+			return conn, nil
 		}
 	}
 	return nil, errors.New("unix syslog delivery error")
@@ -179,7 +177,7 @@ func (w *SyslogWriter) sendMessage(message string) error {
 }
 
 // BuildTheme ...
-func (w *SyslogWriter) BuildTheme(module string) ColorTheme { return ColorTheme{} }
+func (w *SyslogWriter) BuildTheme(_ /*module*/ string) ColorTheme { return ColorTheme{} }
 
 // Log ...
 func (w *SyslogWriter) Log(level Level, _ ColorTheme, module, filename string, line int, timestamp time.Time, message string) {

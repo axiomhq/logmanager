@@ -1,0 +1,19 @@
+version: 2
+
+project_name: logmanager
+
+builds:
+  - skip: true
+
+snapshot:
+  name_template: "{{ .Version }}-next"
+
+changelog:
+  use: github-native
+
+release:
+  github:
+    owner: axiomhq
+    name: logmanager
+  prerelease: auto
+  name_template: "v{{.Version}}"

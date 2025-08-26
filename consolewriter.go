@@ -37,7 +37,7 @@ func init() {
 // colors
 var (
 	processName  string
-	moduleColors = []func(string, ...interface{}) string{
+	moduleColors = []func(string, ...any) string{
 		color.New(color.FgHiGreen, color.Faint).SprintfFunc(),
 		color.New(color.FgHiGreen).SprintfFunc(),
 		color.New(color.FgGreen).SprintfFunc(),
@@ -57,7 +57,7 @@ var (
 	}
 )
 
-func getColor(str string) func(string, ...interface{}) string {
+func getColor(str string) func(string, ...any) string {
 	hash := crc32.ChecksumIEEE([]byte(str))
 	return moduleColors[int(hash)%len(moduleColors)]
 }
@@ -88,7 +88,7 @@ func (w *ConsoleWriter) BuildTheme(module string) ColorTheme {
 }
 
 // Log ...
-func (w *ConsoleWriter) Log(level Level, theme ColorTheme, module, filename string, line int, timestamp time.Time, message string) {
+func (w *ConsoleWriter) Log(level Level, theme ColorTheme, _ /*module*/, filename string, line int, timestamp time.Time, message string) {
 	ts := timestamp.In(time.UTC).Format("15:04:05.00")
 	filename = filepath.Base(filename)
 
