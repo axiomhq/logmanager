@@ -10,7 +10,7 @@ tool (
 
 require (
 	github.com/fatih/color v1.18.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 )
 
 require (
