@@ -11,7 +11,7 @@ import (
 
 // doesn't actually test the logger, just lets us see what it looks like
 func TestLookAtTheLogFormat(t *testing.T) {
-	logmodules := []Logger{
+	logmodules := append(make([]Logger, 0, 17),
 		GetLogger("MODULEred"),
 		GetLogger("MODUleYellow"),
 		GetLogger("ModuLECYAN"),
@@ -19,7 +19,7 @@ func TestLookAtTheLogFormat(t *testing.T) {
 		GetLogger("ModuleBLue"),
 		GetLogger("ModuleMagenTA"),
 		GetLogger("ModuleWhite"),
-	}
+	)
 
 	// also read-add some of the log modules to test race conditions
 	for range 10 {
