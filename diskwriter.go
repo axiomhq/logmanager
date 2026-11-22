@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"time"
 )
 
@@ -53,8 +54,7 @@ func (w DiskWriter) rotateLogs() (time.Time, error) {
 	}
 
 	// reverse traverse the list so we can rename foo.log.3 before foo.log.2
-	for i := len(logfiles) - 1; i >= 0; i-- {
-		oldName := logfiles[i]
+	for i, oldName := range slices.Backward(logfiles) {
 		newName := fmt.Sprintf("%s.%d", path.Base(w.logpath), i+1)
 
 		_ = os.Rename(path.Join(logDir, oldName), path.Join(logDir, newName))

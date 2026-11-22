@@ -64,7 +64,7 @@ func unixSyslog() (conn connwriter, err error) {
 type SyslogWriter struct {
 	m sync.Mutex
 
-	isClosed  uint32
+	isClosed  atomic.Uint32
 	conn      connwriter
 	localConn bool
 	hostname  string
@@ -147,7 +147,7 @@ func (w *SyslogWriter) sendloop() {
 		}
 
 		for len(w.bufferedMessages) < 1 {
-			if atomic.LoadUint32(&w.isClosed) == 1 {
+			if w.isClosed.Load() == 1 {
 				// connection closed, we need to exit
 				return
 			}
@@ -181,7 +181,7 @@ func (w *SyslogWriter) BuildTheme(_ /*module*/ string) ColorTheme { return Color
 
 // Log ...
 func (w *SyslogWriter) Log(level Level, _ ColorTheme, module, filename string, line int, timestamp time.Time, message string) {
-	if atomic.LoadUint32(&w.isClosed) == 1 {
+	if w.isClosed.Load() == 1 {
 		return
 	}
 

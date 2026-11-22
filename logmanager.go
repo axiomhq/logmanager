@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -59,13 +60,13 @@ const (
 
 var (
 	globalWriters     = []Writer{NewConsoleWriter()}
-	customWritersSet  uint64
+	customWritersSet  atomic.Uint64
 	globalWritersLock sync.RWMutex
 )
 
 // SetCustomWriters ...
 func SetCustomWriters(writers ...Writer) {
-	if atomic.LoadUint64(&customWritersSet) > 0 {
+	if customWritersSet.Load() > 0 {
 		panic(errors.New("custom writers has already been set"))
 	}
 
@@ -74,7 +75,7 @@ func SetCustomWriters(writers ...Writer) {
 	// copy, so we can "atomically" replace globalWriters
 	newWriters := append([]Writer{}, writers...)
 	globalWriters = newWriters
-	atomic.StoreUint64(&customWritersSet, 1)
+	customWritersSet.Store(1)
 }
 
 // getWriters will return the current global writers if the given src is nil
@@ -101,6 +102,8 @@ type Logger struct {
 	name  string
 	level Level
 
+	// Not atomic.Uint32: GetLogger returns Logger by value, and go vet
+	// reports every copy of an atomic type.
 	themeGenerated   uint32
 	writeDescriptors []writeDescriptor
 	writeDescLock    *sync.RWMutex
@@ -122,7 +125,7 @@ func GetLogger(name string) Logger {
 	// flexability
 	level := Info
 	levelHint := ""
-	for _, moduleInfo := range strings.Split(loggerSpec, ":") {
+	for moduleInfo := range strings.SplitSeq(loggerSpec, ":") {
 		moduleName, moduleLevel, found := strings.Cut(moduleInfo, "=")
 		if !found {
 			continue
@@ -389,8 +392,7 @@ func (c *columnedLines) String() (lines string) {
 }
 
 func (c *columnedLines) Reverse() (lines string) {
-	for i := len(c.columnValues) - 1; i >= 0; i-- {
-		columns := c.columnValues[i]
+	for _, columns := range slices.Backward(c.columnValues) {
 		lines += c.ColumnString(columns) + "\n"
 	}
 	return
