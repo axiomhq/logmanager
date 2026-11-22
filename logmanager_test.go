@@ -2,6 +2,7 @@ package logmanager
 
 import (
 	"errors"
+	"slices"
 	"sync"
 	"testing"
 
@@ -11,7 +12,7 @@ import (
 
 // doesn't actually test the logger, just lets us see what it looks like
 func TestLookAtTheLogFormat(t *testing.T) {
-	logmodules := []Logger{
+	base := []Logger{
 		GetLogger("MODULEred"),
 		GetLogger("MODUleYellow"),
 		GetLogger("ModuLECYAN"),
@@ -22,22 +23,18 @@ func TestLookAtTheLogFormat(t *testing.T) {
 	}
 
 	// also read-add some of the log modules to test race conditions
-	for range 10 {
-		logmodules = append(logmodules, logmodules[0])
-	}
+	logmodules := slices.Concat(base, slices.Repeat(base[:1], 10))
 
 	var wg sync.WaitGroup
-	for _, log := range logmodules {
-		wg.Add(1)
-		go func(logger Logger) {
+	for _, logger := range logmodules {
+		wg.Go(func() {
 			logger.Trace("test trace")
 			logger.Debug("test debug")
 			logger.Info("test info")
 			logger.Warn("test warning")
 			_ = logger.Error("test error")
 			logger.Critical("test critical")
-			wg.Done()
-		}(log)
+		})
 	}
 	wg.Wait()
 

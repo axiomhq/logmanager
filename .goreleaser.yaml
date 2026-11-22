@@ -6,7 +6,7 @@ builds:
   - skip: true
 
 snapshot:
-  name_template: "{{ .Version }}-next"
+  version_template: "{{ .Version }}-next"
 
 changelog:
   use: github-native
